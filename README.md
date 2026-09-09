@@ -44,16 +44,57 @@ current progress; the short version is:
 
 ## How a single RandomX hash is computed
 
-`calculate_hash(key, input) -> [u8; 32]` is the entire algorithm. `key`
-changes rarely (in Monero, roughly every 2048 blocks — about every 2.8
-days); `input` is the per-attempt block header + nonce being hashed. A real
-miner reuses the expensive `key`-derived state (the Cache/Dataset) across
-millions of `input` values; this project starts by treating the whole
+`calculate_hash(key, input) -> [u8; 32]` is the entire algorithm, and it
+takes exactly two byte strings in:
+
+- **`key`** — in Monero, the hash of a designated "key block" from the
+  chain. It changes rarely (roughly every 2048 blocks, ~2.8 days), and
+  everything derived from it alone (Cache, superscalar programs, Dataset)
+  is expensive to (re)compute but can be reused across millions of hashes.
+  It's an input to the algorithm, not a secret — anyone verifying a block
+  recomputes the same Cache from the same public key block.
+- **`input`** — the actual thing being hashed on each attempt: in Monero,
+  the block header ("blob") with a candidate `nonce` value plugged in. This
+  is what changes on *every single guess* in the brute-force mining loop
+  (see the "brute force" discussion earlier in this conversation) — the
+  miner holds `key`'s derived state fixed and just swaps `input` (i.e. the
+  nonce) millions of times per second, computing a fresh `calculate_hash`
+  for each one and checking the result against the difficulty target.
+
+A real miner reuses the expensive `key`-derived state (the Cache/Dataset)
+across all those `input` values; this project starts by treating the whole
 thing as one call so the mechanics are clear, before optimizing reuse.
+
+### From input to output: how the pieces connect
+
+Each stage below both *consumes* something from the stage before it and
+*produces* something the next stage needs — nothing is computed in
+isolation. At a glance:
+
+```mermaid
+flowchart TD
+    K["key"] -->|Argon2d| C["Cache (256 MiB)"]
+    C -->|SuperscalarHash programs| D["Dataset item (64 bytes), derived on demand"]
+    I["input"] -->|Blake2b + context| E0["entropy buffer #0 (128 bytes)"]
+    E0 -->|decode 256 instructions| P0["Program #0"]
+    P0 -->|execute 2048 iterations,\nreading/writing scratchpad,\nmixing in Dataset items| R0["register file + scratchpad after program #0"]
+    R0 -->|AesGenerator4R hash-and-fill| E1["entropy buffer #1"]
+    E1 -.->|"...repeated for programs #1-#7..."| R7["register file after program #7"]
+    R7 -->|Blake2b| OUT["32-byte RandomX hash"]
+    D -.-> P0
+```
+
+So concretely: `key` only ever feeds the Cache/Dataset side (left branch);
+`input` only ever seeds the *first* program's entropy (right branch); from
+there, the 8 programs form one long chain where each program's finished
+register state becomes the seed for the next program, occasionally reading
+from the Dataset (which is only a function of `key`, never of `input`).
+The very last program's register file is the one and only thing that gets
+turned into the final 32-byte output.
 
 ### 1. Cache — turning the key into 256 MiB of noise
 
-*Module: [`src/cache.rs`](src/cache.rs)*
+*Module: [`src/cache.rs`](src/cache.rs)* — **consumes:** `key`. **produces:** the Cache.
 
 RandomX runs [Argon2d](https://en.wikipedia.org/wiki/Argon2) (the
 data-dependent variant of the password-hashing function Argon2) over the
@@ -69,7 +110,7 @@ Fixed parameters (see [`src/params.rs`](src/params.rs)):
 
 ### 2. SuperscalarHash — expanding the Cache into a Dataset on demand
 
-*Module: [`src/superscalar.rs`](src/superscalar.rs)*
+*Module: [`src/superscalar.rs`](src/superscalar.rs)* — **consumes:** the Cache (indirectly, `key`). **produces:** Dataset items, computed one at a time whenever step 4c asks for one.
 
 The *real* memory-hard structure RandomX wants you to have is the
 **Dataset**: over 2 GiB of pseudo-random data. Keeping all 2 GiB resident
@@ -93,6 +134,8 @@ correct (only needs the 256 MiB Cache), even though it's much slower.
 
 ### 3. Seeding the first program
 
+**Consumes:** `input`. **produces:** the entropy buffer for program #0.
+
 `input` is hashed (Blake2b) together with a small amount of fixed context
 to produce the first 128-byte "entropy" buffer. Every subsequent program's
 entropy buffer instead comes from the *previous* program's execution
@@ -103,7 +146,10 @@ single hash.
 ### 4. Running 8 chained programs
 
 *Modules: [`src/program.rs`](src/program.rs), [`src/vm.rs`](src/vm.rs),
-[`src/aes_generator.rs`](src/aes_generator.rs)*
+[`src/aes_generator.rs`](src/aes_generator.rs)* — **consumes:** an entropy
+buffer (from step 3, or from the previous round's step 4d) and Dataset
+items (step 2). **produces:** an updated register file/scratchpad, and
+(via 4d) the entropy buffer for the next round.
 
 RandomX executes `RANDOMX_PROGRAM_COUNT` = **8** programs back-to-back,
 each built and torn down using the previous program's leftover state.
@@ -145,10 +191,14 @@ the *next* program, chaining round `i` into round `i+1`.
 
 ### 5. Finalizing the hash
 
-After the 8th program finishes, the final register file (all int + float
-registers) is hashed with **Blake2b** to produce the 32-byte digest. That
-digest is the RandomX hash — what Monero compares against the network
-difficulty target.
+**Consumes:** the register file left behind by program #7 (the 8th and
+last program). **produces:** the final output.
+
+The final register file (all int + float registers) is hashed with
+**Blake2b** to produce the 32-byte digest. That digest is the RandomX
+hash — what Monero compares against the network difficulty target. No
+step after this one exists; this Blake2b call's output is literally what
+`calculate_hash` returns.
 
 ## Repository layout
 
