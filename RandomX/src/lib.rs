@@ -45,9 +45,11 @@ pub mod params;
 pub mod program;
 pub mod reciprocal;
 pub mod superscalar;
+pub mod telemetry;
 pub mod vm;
 
 use cache::Cache;
+use telemetry::HashTelemetry;
 
 /// Compute a single RandomX hash of `input` under key `key`, in light mode.
 ///
@@ -56,7 +58,20 @@ use cache::Cache;
 /// sequence, collapsed into one call for a from-scratch, "compute one hash
 /// end to end" first pass.
 pub fn calculate_hash(key: &[u8], input: &[u8]) -> [u8; params::HASH_SIZE] {
-    let _cache = Cache::new(key);
+    calculate_hash_with_telemetry(key, input).0
+}
+
+/// Same as [`calculate_hash`], but also returns a [`HashTelemetry`] trace
+/// with a high-resolution timing for every pipeline stage listed in the
+/// module docs above (Cache init, SuperscalarHash generation, entropy
+/// seeding, per-program generate/AES-fill/execute/hash-and-fill, and final
+/// Blake2b), in the order they ran.
+pub fn calculate_hash_with_telemetry(
+    key: &[u8],
+    input: &[u8],
+) -> ([u8; params::HASH_SIZE], HashTelemetry) {
+    let mut telemetry = HashTelemetry::new();
+    let _cache = telemetry.time("cache_init", || Cache::new(key));
     let _ = input;
     todo!("run the 8 chained programs described in the module docs, then Blake2b the result")
 }
