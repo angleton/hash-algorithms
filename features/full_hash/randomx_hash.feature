@@ -1,7 +1,8 @@
-Feature: Compute a single RandomX hash
+Feature: Compute a single RandomX hash (full pipeline, all steps combined)
   RandomX (used by Monero's proof of work) turns a key K and an input
-  message into a 256-bit hash. This feature describes the behavior of
-  running the algorithm exactly once, end to end, in light mode.
+  message into a 256-bit hash. This is the end-to-end integration test:
+  it exercises every stage in features/ (cache, dataset, aes_generator,
+  reciprocal, ...) chained together, the same way a real hash is computed.
 
   The expected outputs below are the official reference test vectors from
   the RandomX repository (src/tests/tests.cpp), computed with the classic

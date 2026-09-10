@@ -14,11 +14,13 @@
 //! The "1R"/"4R" naming refers to how many AES rounds are applied per
 //! 16-byte block per generator step.
 
-/// Fill `output` with pseudo-random bytes derived from `seed`, applying one
-/// AES round per state block per step (`AesGenerator1R`).
-pub fn fill_1r(_seed: &[u8; 64], output: &mut [u8]) {
-    let _ = output;
-    todo!("apply fixed-key AES encryption/decryption rounds to expand the seed")
+/// Fill `state` in place with pseudo-random bytes, applying one AES round
+/// per 16-byte lane per output block (`AesGenerator1R`). Matches the
+/// reference `fillAes1Rx4(state, sizeof(state), state)` call, where the
+/// same buffer is both the seed and the output.
+pub fn fill_1r(state: &mut [u8; 64]) {
+    let _ = state;
+    todo!("apply fixed-key AES encryption/decryption rounds to expand the seed, in place")
 }
 
 /// Fill `output` with pseudo-random bytes derived from `seed`, applying four

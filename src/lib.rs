@@ -43,6 +43,7 @@ pub mod cache;
 pub mod dataset;
 pub mod params;
 pub mod program;
+pub mod reciprocal;
 pub mod superscalar;
 pub mod vm;
 

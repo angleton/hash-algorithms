@@ -34,9 +34,10 @@ generation). See the todo list in this repo's tracked issues/PRs for
 current progress; the short version is:
 
 - [x] Project + BDD scaffold
+- [ ] `reciprocal` (IMUL_RCP helper, pure integer math)
 - [ ] `Cache` (Argon2d)
 - [ ] `SuperscalarHash` program generation
-- [ ] Dataset item derivation (light mode)
+- [ ] Dataset item derivation (register seeding done as a stub; on-demand light mode)
 - [ ] AES-based scratchpad/entropy generation
 - [ ] Program generation/decoding (the random instruction stream)
 - [ ] VM instruction execution
@@ -209,28 +210,53 @@ src/
   cache.rs           Stage 1: Argon2d-derived Cache
   superscalar.rs      Stage 2: SuperscalarHash program generation
   dataset.rs          Stage 2b: on-demand Dataset item derivation (light mode)
+  reciprocal.rs        The IMUL_RCP reciprocal helper (pure integer math)
   aes_generator.rs    Stage 4: AesGenerator1R / AesGenerator4R
   program.rs          Stage 4a: entropy -> decoded instruction program
   vm.rs               Stage 4b-d: register file, scratchpad, execution loop
   main.rs             Thin CLI entry point (prints one hash)
 features/
-  randomx_hash.feature  BDD scenarios, using official RandomX test vectors
+  reciprocal/          Per-step: the IMUL_RCP reciprocal function
+  cache/               Per-step: Argon2d cache spot-checks
+  dataset/             Per-step: Dataset item register seeding
+  aes_generator/       Per-step: AesGenerator1R
+  full_hash/           Integration: the whole pipeline combined
 tests/
-  cucumber.rs           Step definitions wiring Gherkin steps to calculate_hash()
+  cucumber_reciprocal.rs    Step definitions for features/reciprocal/
+  cucumber_cache.rs         Step definitions for features/cache/
+  cucumber_dataset.rs       Step definitions for features/dataset/
+  cucumber_aes_generator.rs Step definitions for features/aes_generator/
+  cucumber.rs               Step definitions for features/full_hash/
 ```
+
+Each stage gets its own feature folder and matching test binary, with its
+own known-good input/output values — the same each-step-then-the-whole-thing
+approach as testing a hash algorithm block-by-block (padding, message
+schedule, compression, ...) before testing the full digest. As new stages
+(`superscalar`, `program`, `vm` instruction execution, ...) get concrete
+reference test vectors, they'll get their own `features/<stage>/` +
+`tests/cucumber_<stage>.rs` pair the same way.
 
 ## Running the tests
 
 ```powershell
-cargo test --test cucumber
+cargo test                          # every suite, step-level and full-hash
+cargo test --test cucumber_reciprocal
+cargo test --test cucumber_cache
+cargo test --test cucumber_dataset
+cargo test --test cucumber_aes_generator
+cargo test --test cucumber          # full end-to-end hash (features/full_hash/)
 ```
 
-This runs the Gherkin scenarios in `features/randomx_hash.feature` against
-`calculate_hash`. Scenarios use the official reference test vectors from
-the upstream [RandomX repository](https://github.com/tevador/RandomX)'s
-test suite (`src/tests/tests.cpp`), computed with the classic
-("v1"/interpreter) variant of the algorithm, so a fully correct
-implementation should make every scenario pass without any test changes.
+Each suite runs the Gherkin scenarios in its `features/<stage>/` folder
+against the corresponding module. Expected values are the official
+reference test vectors from the upstream
+[RandomX repository](https://github.com/tevador/RandomX)'s test suite
+(`src/tests/tests.cpp`) wherever those exist; the Dataset register-seeding
+scenarios were instead computed independently from the documented formula
+(`doc/specs.md` section 7.3), as a cross-check on the constants themselves.
+A fully correct implementation should make every scenario pass without any
+test changes.
 
 ## Running the (eventual) binary
 

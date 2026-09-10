@@ -1,7 +1,10 @@
-//! Cucumber BDD test harness for the RandomX single-hash feature.
+//! Cucumber BDD test harness for the full, end-to-end RandomX hash feature.
 //!
 //! Run with `cargo test --test cucumber`. Scenarios live in
-//! `features/randomx_hash.feature`; step definitions are below.
+//! `features/full_hash/randomx_hash.feature`; step definitions are below.
+//! Per-step scenarios for individual pipeline stages live in their own
+//! `features/<stage>/` folders with matching `tests/cucumber_<stage>.rs`
+//! harnesses (see README.md).
 
 use cucumber::{World, given, then, when};
 
@@ -41,5 +44,5 @@ fn then_hash_not_equals(world: &mut RandomXWorld, unexpected_hex: String) {
 
 #[tokio::main]
 async fn main() {
-    RandomXWorld::run("features").await;
+    RandomXWorld::run("features/full_hash").await;
 }

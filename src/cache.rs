@@ -20,6 +20,7 @@
 use crate::params;
 
 /// The RandomX Cache: 256 MiB derived from the key via Argon2d.
+#[derive(Debug)]
 pub struct Cache {
     memory: Vec<u8>,
 }
