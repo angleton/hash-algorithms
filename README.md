@@ -12,6 +12,9 @@ test of the whole algorithm.
   hash algorithm used by Monero. In progress: see
   [RandomX/README.md](RandomX/README.md) for a full breakdown of the
   algorithm and current implementation status.
+- [**SHA-256**](SHA256/) — a BDD-first scaffold for the standard SHA-256
+  pipeline. The feature files cover each step, while the implementation is
+  intentionally left pending for comparison against older code.
 
 More algorithms will be added here over time, each in their own top-level
 directory.

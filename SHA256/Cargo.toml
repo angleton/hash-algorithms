@@ -1,0 +1,35 @@
+[package]
+name = "sha256-educational"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hex = "0.4.3"
+
+[dev-dependencies]
+cucumber = "0.23.0"
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
+
+[[test]]
+name = "cucumber"
+harness = false
+
+[[test]]
+name = "cucumber_padding"
+harness = false
+
+[[test]]
+name = "cucumber_blocks"
+harness = false
+
+[[test]]
+name = "cucumber_schedule"
+harness = false
+
+[[test]]
+name = "cucumber_round"
+harness = false
+
+[[test]]
+name = "cucumber_compression"
+harness = false
