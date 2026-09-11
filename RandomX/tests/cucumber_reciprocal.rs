@@ -24,7 +24,7 @@ fn then_reciprocal(world: &mut ReciprocalWorld, expected: u64) {
     assert_eq!(world.result, expected);
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn cucumber_reciprocal() {
     ReciprocalWorld::run("features/reciprocal").await;
 }

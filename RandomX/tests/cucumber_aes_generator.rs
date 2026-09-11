@@ -32,7 +32,7 @@ fn then_state(world: &mut AesGeneratorWorld, expected_hex: String) {
     assert_eq!(&world.state[..expected.len()], expected.as_slice());
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn cucumber_aes_generator() {
     AesGeneratorWorld::run("features/aes_generator").await;
 }

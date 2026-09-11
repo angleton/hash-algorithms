@@ -31,7 +31,7 @@ fn then_word_equals(world: &mut CacheWorld, index: usize, expected_hex: String) 
     assert_eq!(u64::from_le_bytes(word_bytes), expected);
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn cucumber_cache() {
     CacheWorld::run("features/cache").await;
 }

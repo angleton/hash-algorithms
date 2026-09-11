@@ -11,22 +11,3 @@ hex = "0.4.3"
 cucumber = "0.23.0"
 tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
 
-[[test]]
-name = "cucumber"
-harness = false
-
-[[test]]
-name = "cucumber_reciprocal"
-harness = false
-
-[[test]]
-name = "cucumber_cache"
-harness = false
-
-[[test]]
-name = "cucumber_dataset"
-harness = false
-
-[[test]]
-name = "cucumber_aes_generator"
-harness = false
