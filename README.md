@@ -15,6 +15,8 @@ test of the whole algorithm.
 - [**SHA-256**](SHA256/) — a BDD-first scaffold for the standard SHA-256
   pipeline. The feature files cover each step, while the implementation is
   intentionally left pending for comparison against older code.
+- [**Scrypt**](Scrypt/) — an educational implementation of the memory-hard
+  password-based key derivation function used by Litecoin and other coins.
 
 More algorithms will be added here over time, each in their own top-level
 directory.
