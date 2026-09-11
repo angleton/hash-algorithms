@@ -29,12 +29,15 @@ pub fn derive_key(
     let parallel_len = block_len
         .checked_mul(p as usize)
         .expect("p and r are too large");
+
+    // The first PBKDF2 pass supplies one independent ROMix input per lane.
     let mut b = pbkdf2_hmac_sha256(password, salt, parallel_len);
 
     for block in b.chunks_exact_mut(block_len) {
         romix(block, n as usize, r as usize);
     }
 
+    // The second PBKDF2 pass turns the memory-hard intermediate into the key.
     pbkdf2_hmac_sha256(password, &b, output_len)
 }
 
@@ -80,11 +83,13 @@ fn romix(block: &mut [u8], n: usize, r: usize) {
     let mut x = block.to_vec();
     let mut v = Vec::with_capacity(n * block_len);
 
+    // Fill V with the sequential states; this is the memory-hard portion.
     for _ in 0..n {
         v.extend_from_slice(&x);
         x = block_mix(&x, r);
     }
 
+    // Revisit pseudo-random prior states before the final BlockMix step.
     for _ in 0..n {
         let j = integerify(&x, r) & (n - 1);
         for (left, right) in x.iter_mut().zip(&v[j * block_len..(j + 1) * block_len]) {
@@ -106,6 +111,7 @@ fn block_mix(block: &[u8], r: usize) -> Vec<u8> {
     x.copy_from_slice(&block[(2 * r - 1) * BLOCK_SIZE..2 * r * BLOCK_SIZE]);
     let mut y = vec![0u8; block.len()];
 
+    // Apply Salsa20/8 to each 64-byte chunk, then separate even and odd chunks.
     for i in 0..2 * r {
         for byte in 0..BLOCK_SIZE {
             x[byte] ^= block[i * BLOCK_SIZE + byte];
@@ -130,6 +136,7 @@ fn salsa20_8(block: &mut [u8; BLOCK_SIZE]) {
     });
     let mut x = input;
 
+    // Four column/row double-rounds provide Salsa20/8's eight rounds.
     for _ in 0..4 {
         x[4] ^= (x[0].wrapping_add(x[12])).rotate_left(7);
         x[8] ^= (x[4].wrapping_add(x[0])).rotate_left(9);
