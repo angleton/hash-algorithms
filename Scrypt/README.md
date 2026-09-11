@@ -2,7 +2,8 @@
 
 An educational, BDD-first implementation of the Scrypt password-based key
 derivation function. Scrypt was used by Litecoin and several other
-proof-of-work cryptocurrencies, including BitConnect.
+proof-of-work cryptocurrencies, including what was formerly the BitConnect Coin
+before it was revealed as wholly a scam.
 
 The implementation follows the standard pipeline:
 
