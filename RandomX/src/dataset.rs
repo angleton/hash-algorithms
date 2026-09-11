@@ -32,11 +32,72 @@ const SEED_ADD: [u64; 7] = [
 /// — the simplest possible independently-testable piece of Dataset
 /// generation.
 pub fn seed_registers(item_number: u64) -> [u64; 8] {
-    let _ = (item_number, SEED_MUL0, SEED_ADD);
-    todo!("r0 = (item_number + 1).wrapping_mul(SEED_MUL0); r[1..=7] = r0 ^ SEED_ADD[..]")
+    let r0 = (item_number.wrapping_add(1)).wrapping_mul(SEED_MUL0);
+    let mut registers = [0u64; 8];
+    registers[0] = r0;
+    for (register, add) in registers[1..].iter_mut().zip(SEED_ADD) {
+        *register = r0 ^ add;
+    }
+    registers
 }
 
 /// Derive one 64-byte Dataset item on demand from the Cache (light mode).
 pub fn get_item(_cache: &Cache, _item_number: u64) -> [u8; 64] {
     todo!("seed_registers, then mix in 8 cache reads through the 8 superscalar programs")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Independently computed from the documented formula/constants, cross-checked
+    // against dataset.cpp, doc/specs.md, and superscalar-init.cpp.
+    #[test]
+    fn matches_reference_vectors() {
+        let cases: [(u64, [u64; 8]); 3] = [
+            (
+                0,
+                [
+                    0x5851f42d4c957f2d,
+                    0xd95b63a71560ded1,
+                    0xff216df27457a76b,
+                    0xd9774d31f3b73671,
+                    0x111cd1ba5b0af54f,
+                    0xca661b94823f9321,
+                    0x777ba25920735255,
+                    0xdcd4cfdafab99a63,
+                ],
+            ),
+            (
+                1,
+                [
+                    0xb0a3e85a992afe5a,
+                    0x31a97fd0c0df5fa6,
+                    0x17d37185a1e8261c,
+                    0x318551462608b706,
+                    0xf9eecdcd8eb57438,
+                    0x229407e357801256,
+                    0x9f89be2ef5ccd322,
+                    0x3426d3ad2f061b14,
+                ],
+            ),
+            (
+                1_000_000,
+                [
+                    0xdc6a2a017061e46d,
+                    0x5d60bd8b29944591,
+                    0x7b1ab3de48a33c2b,
+                    0x5d4c931dcf43ad31,
+                    0x95270f9667fe6e0f,
+                    0x4e5dc5b8becb0861,
+                    0xf3407c751c87c915,
+                    0x58ef11f6c64d0123,
+                ],
+            ),
+        ];
+
+        for (item_number, expected) in cases {
+            assert_eq!(seed_registers(item_number), expected, "item_number {item_number}");
+        }
+    }
 }
