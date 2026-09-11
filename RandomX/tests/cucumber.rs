@@ -42,7 +42,7 @@ fn then_hash_not_equals(world: &mut RandomXWorld, unexpected_hex: String) {
     assert_ne!(world.hash.as_slice(), unexpected.as_slice());
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn cucumber_full_hash() {
     RandomXWorld::run("features/full_hash").await;
 }

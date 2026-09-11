@@ -26,7 +26,7 @@ fn then_register(world: &mut DatasetWorld, index: usize, expected_hex: String) {
     assert_eq!(world.registers[index], expected, "register r{index}");
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn cucumber_dataset() {
     DatasetWorld::run("features/dataset").await;
 }
