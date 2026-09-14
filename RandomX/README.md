@@ -1,10 +1,9 @@
-# RandomX Miner (from scratch, in Rust)
+# RandomX Miner and Profiler
 
-An educational, incremental Rust implementation of **RandomX**, the
-proof-of-work hash algorithm Monero has used since November 2019. The goal
-of this repo is to understand RandomX deeply by building it up one concept
-at a time — starting with computing a single hash correctly, and only
-later worrying about making it fast enough to mine with.
+An educational Rust interface to **RandomX**, the proof-of-work hash
+algorithm Monero has used since November 2019. Complete hashes use the
+maintained RandomX reference backend, while independently useful stages
+remain implemented in Rust and checked against official vectors.
 
 Development follows **BDD** (Behavior-Driven Development): each stage of
 the algorithm is first described as a Gherkin scenario with a known,
@@ -25,23 +24,14 @@ runs different code.
 
 ## Project status
 
-The whole single-hash pipeline is scaffolded and documented (see
-[`src/lib.rs`](src/lib.rs) and the module list below), but only the
-*shape* of the algorithm exists so far — each stage is a `todo!()` stub.
-The BDD suite in [`features/randomx_hash.feature`](features/randomx_hash.feature)
-currently fails ("red") at the first unimplemented stage (Argon2d cache
-generation). See the todo list in this repo's tracked issues/PRs for
-current progress; the short version is:
+The light-mode hash pipeline is complete and passes the official RandomX
+hash vectors. Cache initialization, AES generation, dataset register
+seeding, and reciprocal arithmetic also have stage-level vector tests.
+Telemetry reports wall time, process CPU time, CPU share, and attributed
+memory for cache initialization, VM initialization, and hash execution.
 
-- [x] Project + BDD scaffold
-- [ ] `reciprocal` (IMUL_RCP helper, pure integer math)
-- [ ] `Cache` (Argon2d)
-- [ ] `SuperscalarHash` program generation
-- [ ] Dataset item derivation (register seeding done as a stub; on-demand light mode)
-- [ ] AES-based scratchpad/entropy generation
-- [ ] Program generation/decoding (the random instruction stream)
-- [ ] VM instruction execution
-- [ ] Final Blake2b + wiring it all together in `calculate_hash`
+The full VM, superscalar generator, Dataset expansion, and JIT are supplied
+by `randomx-rs`, which builds the maintained RandomX C++ implementation.
 
 ## How a single RandomX hash is computed
 
@@ -111,7 +101,7 @@ Fixed parameters (see [`src/params.rs`](src/params.rs)):
 
 ### 2. SuperscalarHash — expanding the Cache into a Dataset on demand
 
-*Module: [`src/superscalar.rs`](src/superscalar.rs)* — **consumes:** the Cache (indirectly, `key`). **produces:** Dataset items, computed one at a time whenever step 4c asks for one.
+**Native RandomX backend** — **consumes:** the Cache (indirectly, `key`). **produces:** Dataset items, computed one at a time whenever step 4c asks for one.
 
 The *real* memory-hard structure RandomX wants you to have is the
 **Dataset**: over 2 GiB of pseudo-random data. Keeping all 2 GiB resident
@@ -146,8 +136,7 @@ single hash.
 
 ### 4. Running 8 chained programs
 
-*Modules: [`src/program.rs`](src/program.rs), [`src/vm.rs`](src/vm.rs),
-[`src/aes_generator.rs`](src/aes_generator.rs)* — **consumes:** an entropy
+**Native RandomX VM and [`src/aes_generator.rs`](src/aes_generator.rs)** — **consumes:** an entropy
 buffer (from step 3, or from the previous round's step 4d) and Dataset
 items (step 2). **produces:** an updated register file/scratchpad, and
 (via 4d) the entropy buffer for the next round.
@@ -208,13 +197,11 @@ src/
   lib.rs             Top-level calculate_hash() and the full pipeline walkthrough
   params.rs          Fixed RandomX constants (from the official spec)
   cache.rs           Stage 1: Argon2d-derived Cache
-  superscalar.rs      Stage 2: SuperscalarHash program generation
-  dataset.rs          Stage 2b: on-demand Dataset item derivation (light mode)
+  dataset.rs          Dataset-item register seeding helper
   reciprocal.rs        The IMUL_RCP reciprocal helper (pure integer math)
   aes_generator.rs    Stage 4: AesGenerator1R / AesGenerator4R
-  program.rs          Stage 4a: entropy -> decoded instruction program
-  vm.rs               Stage 4b-d: register file, scratchpad, execution loop
-  main.rs             Thin CLI entry point (prints one hash)
+  telemetry.rs        Wall time, CPU time, CPU share, and memory reporting
+  main.rs             CLI entry point (prints one hash and telemetry)
 features/
   reciprocal/          Per-step: the IMUL_RCP reciprocal function
   cache/               Per-step: Argon2d cache spot-checks
@@ -238,6 +225,16 @@ reference test vectors, they'll get their own `features/<stage>/` +
 `tests/cucumber_<stage>.rs` pair the same way.
 
 ## Running the tests
+
+Building `randomx-rs` requires CMake and a C++ compiler. On Windows, install
+CMake and the Desktop development with C++ workload for Visual Studio.
+
+Run the default vector and print its telemetry:
+
+```powershell
+cargo run --release
+cargo run --release -- "test key 000" "This is a test"
+```
 
 ```powershell
 cargo test                          # every suite, step-level and full-hash

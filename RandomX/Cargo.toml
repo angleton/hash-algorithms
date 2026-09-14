@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-blake2 = "0.11.0"
+aes = { version = "0.8.4", features = ["hazmat"] }
+argon2 = "0.6.0"
+cpu-time = "1.0.0"
 hex = "0.4.3"
+randomx-rs = "1.6.0"
 
 [dev-dependencies]
 cucumber = "0.23.0"

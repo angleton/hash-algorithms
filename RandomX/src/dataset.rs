@@ -1,4 +1,4 @@
-//! Stage 3: the **Dataset**, accessed one item at a time.
+//! Dataset arithmetic helpers.
 //!
 //! Conceptually the Dataset is 2 GiB+ of pseudo-random data derived from the
 //! Cache. In "fast mode" it's fully precomputed once and reused for many
@@ -6,11 +6,9 @@
 //! derived on demand straight from the [`crate::cache`] using the
 //! [`crate::superscalar`] programs (slow, but needs only ~256 MiB RAM).
 //!
-//! Both modes are required to produce byte-for-byte identical results —
-//! that's what makes light mode useful for verifying someone else's hash
-//! cheaply. We start with light mode since it's simpler to get right first.
-
-use crate::cache::Cache;
+//! Complete light-mode Dataset expansion is performed by the maintained
+//! RandomX backend used by [`crate::calculate_hash`]. This module exposes
+//! the independently useful register-seeding operation from spec section 7.3.
 
 /// Multiplier and XOR constants from RandomX spec section 7.3, used to
 /// seed a Dataset item's 8 integer registers from only the item number,
@@ -41,11 +39,6 @@ pub fn seed_registers(item_number: u64) -> [u64; 8] {
     registers
 }
 
-/// Derive one 64-byte Dataset item on demand from the Cache (light mode).
-pub fn get_item(_cache: &Cache, _item_number: u64) -> [u8; 64] {
-    todo!("seed_registers, then mix in 8 cache reads through the 8 superscalar programs")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -53,7 +46,7 @@ mod tests {
     // Independently computed from the documented formula/constants, cross-checked
     // against dataset.cpp, doc/specs.md, and superscalar-init.cpp.
     #[test]
-    fn matches_reference_vectors() {
+    fn test_stage2_dataset_seed_registers_reference_vectors() {
         let cases: [(u64, [u64; 8]); 3] = [
             (
                 0,

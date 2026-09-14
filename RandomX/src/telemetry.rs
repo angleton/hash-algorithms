@@ -13,11 +13,15 @@
 use std::fmt;
 use std::time::{Duration, Instant};
 
+use cpu_time::ProcessTime;
+
 /// Timing for a single named pipeline step.
 #[derive(Debug, Clone, Copy)]
 pub struct StepTiming {
     pub name: &'static str,
     pub duration: Duration,
+    pub cpu_duration: Duration,
+    pub memory_bytes: usize,
 }
 
 /// Ordered collection of [`StepTiming`]s gathered while computing one hash.
@@ -36,11 +40,25 @@ impl HashTelemetry {
     /// `f`'s result. Steps are recorded in the order they're timed, so
     /// nested/sequential calls naturally produce a pipeline trace.
     pub fn time<T>(&mut self, name: &'static str, f: impl FnOnce() -> T) -> T {
+        self.time_with_memory(name, 0, f)
+    }
+
+    /// Run `f`, recording wall time, process CPU time, and the amount of
+    /// algorithm memory attributed to the stage.
+    pub fn time_with_memory<T>(
+        &mut self,
+        name: &'static str,
+        memory_bytes: usize,
+        f: impl FnOnce() -> T,
+    ) -> T {
         let start = Instant::now();
+        let cpu_start = ProcessTime::now();
         let result = f();
         self.steps.push(StepTiming {
             name,
             duration: start.elapsed(),
+            cpu_duration: cpu_start.elapsed(),
+            memory_bytes,
         });
         result
     }
@@ -54,14 +72,55 @@ impl HashTelemetry {
     pub fn total(&self) -> Duration {
         self.steps.iter().map(|step| step.duration).sum()
     }
+
+    /// Sum of process CPU time consumed by all recorded stages.
+    pub fn total_cpu(&self) -> Duration {
+        self.steps.iter().map(|step| step.cpu_duration).sum()
+    }
+
+    /// Largest attributed working set among the recorded stages.
+    pub fn peak_memory_bytes(&self) -> usize {
+        self.steps
+            .iter()
+            .map(|step| step.memory_bytes)
+            .max()
+            .unwrap_or(0)
+    }
 }
 
 impl fmt::Display for HashTelemetry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "{:<24} {:>12} {:>12} {:>8} {:>12}",
+            "stage", "wall ms", "cpu ms", "cpu %", "memory MiB"
+        )?;
+        let total_cpu = self.total_cpu().as_secs_f64();
         for step in &self.steps {
-            writeln!(f, "{:<24} {:>15.3} µs", step.name, step.duration.as_secs_f64() * 1e6)?;
+            let cpu_percent = if total_cpu == 0.0 {
+                0.0
+            } else {
+                step.cpu_duration.as_secs_f64() / total_cpu * 100.0
+            };
+            writeln!(
+                f,
+                "{:<24} {:>12.3} {:>12.3} {:>7.1}% {:>12.1}",
+                step.name,
+                step.duration.as_secs_f64() * 1e3,
+                step.cpu_duration.as_secs_f64() * 1e3,
+                cpu_percent,
+                step.memory_bytes as f64 / (1024.0 * 1024.0),
+            )?;
         }
-        write!(f, "{:<24} {:>15.3} µs", "total", self.total().as_secs_f64() * 1e6)
+        write!(
+            f,
+            "{:<24} {:>12.3} {:>12.3} {:>8} {:>12.1}",
+            "total / peak",
+            self.total().as_secs_f64() * 1e3,
+            self.total_cpu().as_secs_f64() * 1e3,
+            "100.0%",
+            self.peak_memory_bytes() as f64 / (1024.0 * 1024.0),
+        )
     }
 }
 
@@ -104,6 +163,8 @@ mod tests {
 
         assert!(telemetry.steps().is_empty());
         assert_eq!(telemetry.total(), Duration::ZERO);
+        assert_eq!(telemetry.total_cpu(), Duration::ZERO);
+        assert_eq!(telemetry.peak_memory_bytes(), 0);
     }
 
     #[test]
@@ -126,9 +187,20 @@ mod tests {
         let rendered = telemetry.to_string();
         let lines: Vec<&str> = rendered.lines().collect();
 
-        assert_eq!(lines.len(), 3);
-        assert!(lines[0].starts_with("stage_one"));
-        assert!(lines[1].starts_with("stage_two"));
-        assert!(lines[2].starts_with("total"));
+        assert_eq!(lines.len(), 4);
+        assert!(lines[0].starts_with("stage"));
+        assert!(lines[1].starts_with("stage_one"));
+        assert!(lines[2].starts_with("stage_two"));
+        assert!(lines[3].starts_with("total / peak"));
+    }
+
+    #[test]
+    fn time_with_memory_tracks_attributed_memory() {
+        let mut telemetry = HashTelemetry::new();
+        telemetry.time_with_memory("small", 1024, || ());
+        telemetry.time_with_memory("large", 4096, || ());
+
+        assert_eq!(telemetry.steps()[0].memory_bytes, 1024);
+        assert_eq!(telemetry.peak_memory_bytes(), 4096);
     }
 }

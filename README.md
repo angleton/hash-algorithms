@@ -9,9 +9,8 @@ test of the whole algorithm.
 ## Algorithms
 
 - [**RandomX**](RandomX/) — the memory-hard, CPU-friendly proof-of-work
-  hash algorithm used by Monero. In progress: see
-  [RandomX/README.md](RandomX/README.md) for a full breakdown of the
-  algorithm and current implementation status.
+  hash algorithm used by Monero, with a working light-mode implementation
+  and CPU/memory telemetry. See [RandomX/README.md](RandomX/README.md).
 - [**SHA-256**](SHA256/) — a BDD-first scaffold for the standard SHA-256
   pipeline. The feature files cover each step, while the implementation is
   intentionally left pending for comparison against older code.

@@ -1,10 +1,15 @@
 fn main() {
-    // The real "run this as fast as possible" miner loop comes later.
-    // For now, this crate is developed and verified through the BDD
-    // scenarios in features/randomx_hash.feature (run via `cargo test`).
-    let key = b"test key 000";
-    let input = b"This is a test";
-    let (hash, telemetry) = randomx_miner::calculate_hash_with_telemetry(key, input);
+    let mut args = std::env::args().skip(1);
+    let key = args.next().unwrap_or_else(|| "test key 000".to_owned());
+    let input = args.next().unwrap_or_else(|| "This is a test".to_owned());
+    if args.next().is_some() {
+        eprintln!("usage: randomx-miner [key] [input]");
+        std::process::exit(2);
+    }
+
+    let (hash, telemetry) =
+        randomx_miner::calculate_hash_with_telemetry(key.as_bytes(), input.as_bytes());
     println!("{}", hex::encode(hash));
+    eprintln!("\nRandomX light-mode telemetry");
     eprintln!("{telemetry}");
 }

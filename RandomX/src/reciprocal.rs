@@ -40,7 +40,7 @@ mod tests {
 
     // Reference values from src/tests/tests.cpp ("randomx_reciprocal" test).
     #[test]
-    fn matches_reference_vectors() {
+    fn test_stage3_reciprocal_reference_vectors() {
         let cases: [(u32, u64); 7] = [
             (3, 12297829382473034410),
             (13, 11351842506898185609),
