@@ -28,5 +28,8 @@ fn then_register(world: &mut DatasetWorld, index: usize, expected_hex: String) {
 
 #[tokio::test]
 async fn cucumber_dataset() {
-    DatasetWorld::run("features/dataset").await;
+    DatasetWorld::cucumber()
+        .with_default_cli()
+        .run("features/dataset")
+        .await;
 }

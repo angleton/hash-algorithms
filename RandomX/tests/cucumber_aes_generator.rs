@@ -34,5 +34,8 @@ fn then_state(world: &mut AesGeneratorWorld, expected_hex: String) {
 
 #[tokio::test]
 async fn cucumber_aes_generator() {
-    AesGeneratorWorld::run("features/aes_generator").await;
+    AesGeneratorWorld::cucumber()
+        .with_default_cli()
+        .run("features/aes_generator")
+        .await;
 }

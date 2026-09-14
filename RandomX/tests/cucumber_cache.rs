@@ -33,5 +33,8 @@ fn then_word_equals(world: &mut CacheWorld, index: usize, expected_hex: String) 
 
 #[tokio::test]
 async fn cucumber_cache() {
-    CacheWorld::run("features/cache").await;
+    CacheWorld::cucumber()
+        .with_default_cli()
+        .run("features/cache")
+        .await;
 }

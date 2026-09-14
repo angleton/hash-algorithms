@@ -44,5 +44,8 @@ fn then_hash_not_equals(world: &mut RandomXWorld, unexpected_hex: String) {
 
 #[tokio::test]
 async fn cucumber_full_hash() {
-    RandomXWorld::run("features/full_hash").await;
+    RandomXWorld::cucumber()
+        .with_default_cli()
+        .run("features/full_hash")
+        .await;
 }
