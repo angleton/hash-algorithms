@@ -1,7 +1,7 @@
 //! BDD harness for SHA-256 message padding.
 
 use cucumber::{World, given, then, when};
-use sha256_educational::padding::pad_message;
+use sha256::padding::pad_message;
 
 #[derive(Debug, Default, World)]
 pub struct PaddingWorld {

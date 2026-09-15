@@ -1,7 +1,7 @@
 //! BDD harness for SHA-256 block compression.
 
 use cucumber::{World, given, then, when};
-use sha256_educational::compression::compress_block;
+use sha256::compression::compress_block;
 
 #[derive(Debug, World)]
 pub struct CompressionWorld {

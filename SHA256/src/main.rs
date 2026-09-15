@@ -5,7 +5,7 @@ fn main() {
     } else {
         message
     };
-    let (digest, telemetry) = sha256_educational::digest_with_telemetry(message.as_bytes());
+    let (digest, telemetry) = sha256::digest_with_telemetry(message.as_bytes());
     println!("{}", hex::encode(digest));
     eprintln!("\nSHA-256 telemetry");
     eprintln!("{telemetry}");

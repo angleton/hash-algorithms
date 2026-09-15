@@ -5,7 +5,7 @@ use cucumber::{World, given, then, when};
 #[derive(Debug, Default, World)]
 pub struct Sha256World {
     message: Vec<u8>,
-    digest: [u8; sha256_educational::HASH_SIZE],
+    digest: [u8; sha256::HASH_SIZE],
 }
 
 #[given(expr = "the message {string}")]
@@ -15,7 +15,7 @@ fn given_message(world: &mut Sha256World, message: String) {
 
 #[when("I calculate the SHA-256 hash")]
 fn when_calculate(world: &mut Sha256World) {
-    world.digest = sha256_educational::digest(&world.message);
+    world.digest = sha256::digest(&world.message);
 }
 
 #[then(expr = "the resulting hash should equal {string}")]

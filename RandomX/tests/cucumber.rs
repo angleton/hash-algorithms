@@ -12,7 +12,7 @@ use cucumber::{World, given, then, when};
 pub struct RandomXWorld {
     key: Vec<u8>,
     input: Vec<u8>,
-    hash: [u8; randomx_miner::params::HASH_SIZE],
+    hash: [u8; randomx::params::HASH_SIZE],
 }
 
 #[given(expr = "the key {string}")]
@@ -27,7 +27,7 @@ fn given_input(world: &mut RandomXWorld, input: String) {
 
 #[when("I calculate the RandomX hash")]
 fn when_calculate(world: &mut RandomXWorld) {
-    world.hash = randomx_miner::calculate_hash(&world.key, &world.input);
+    world.hash = randomx::calculate_hash(&world.key, &world.input);
 }
 
 #[then(expr = "the resulting hash should equal {string}")]

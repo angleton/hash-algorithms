@@ -1,7 +1,7 @@
 //! BDD harness for SHA-256 message schedule expansion.
 
 use cucumber::{World, given, then, when};
-use sha256_educational::schedule::expand_schedule;
+use sha256::schedule::expand_schedule;
 
 #[derive(Debug, World)]
 pub struct ScheduleWorld {

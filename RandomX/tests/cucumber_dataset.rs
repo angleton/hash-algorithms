@@ -16,7 +16,7 @@ fn given_item_number(world: &mut DatasetWorld, item_number: u64) {
 
 #[when("I seed the dataset item registers")]
 fn when_seed(world: &mut DatasetWorld) {
-    world.registers = randomx_miner::dataset::seed_registers(world.item_number);
+    world.registers = randomx::dataset::seed_registers(world.item_number);
 }
 
 #[then(regex = r#"^register r(\d) should equal "(.+)"$"#)]

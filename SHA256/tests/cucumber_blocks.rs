@@ -1,7 +1,7 @@
 //! BDD harness for SHA-256 block word parsing.
 
 use cucumber::{World, given, then, when};
-use sha256_educational::blocks::first_block_words;
+use sha256::blocks::first_block_words;
 
 #[derive(Debug, World)]
 pub struct BlocksWorld {

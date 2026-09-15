@@ -16,7 +16,7 @@ fn given_divisor(world: &mut ReciprocalWorld, divisor: u32) {
 
 #[when("I compute its RandomX reciprocal")]
 fn when_reciprocal(world: &mut ReciprocalWorld) {
-    world.result = randomx_miner::reciprocal::reciprocal(world.divisor);
+    world.result = randomx::reciprocal::reciprocal(world.divisor);
 }
 
 #[then(expr = "the reciprocal should equal {int}")]

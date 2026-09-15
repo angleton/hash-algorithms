@@ -23,7 +23,7 @@ fn given_state(world: &mut AesGeneratorWorld, hex_str: String) {
 
 #[when("I run AesGenerator1R for one block")]
 fn when_fill(world: &mut AesGeneratorWorld) {
-    randomx_miner::aes_generator::fill_1r(&mut world.state);
+    randomx::aes_generator::fill_1r(&mut world.state);
 }
 
 #[then(expr = "the first 32 bytes of the resulting state should equal {string}")]

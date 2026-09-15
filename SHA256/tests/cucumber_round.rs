@@ -1,7 +1,7 @@
 //! BDD harness for one SHA-256 compression round.
 
 use cucumber::{World, given, then, when};
-use sha256_educational::round::{WorkingState, compression_round};
+use sha256::round::{WorkingState, compression_round};
 
 #[derive(Debug, Default, World)]
 pub struct RoundWorld {

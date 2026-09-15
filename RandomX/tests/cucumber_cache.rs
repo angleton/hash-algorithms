@@ -2,7 +2,7 @@
 //! Run with `cargo test --test cucumber_cache`.
 
 use cucumber::{World, given, then, when};
-use randomx_miner::cache::Cache;
+use randomx::cache::Cache;
 
 #[derive(Debug, Default, World)]
 pub struct CacheWorld {
