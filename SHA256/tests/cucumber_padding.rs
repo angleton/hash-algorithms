@@ -27,5 +27,8 @@ fn then_padded_equals(world: &mut PaddingWorld, expected_hex: String) {
 
 #[tokio::main]
 async fn main() {
-    PaddingWorld::run("features/padding").await;
+    PaddingWorld::cucumber()
+        .with_default_cli()
+        .run("features/padding")
+        .await;
 }

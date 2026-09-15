@@ -58,5 +58,8 @@ fn then_state_equals(world: &mut RoundWorld, expected_csv: String) {
 
 #[tokio::main]
 async fn main() {
-    RoundWorld::run("features/round").await;
+    RoundWorld::cucumber()
+        .with_default_cli()
+        .run("features/round")
+        .await;
 }

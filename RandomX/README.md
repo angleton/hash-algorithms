@@ -22,6 +22,31 @@ math, floating point math, branches) and leans on large, slow memory
 to compute it. There is no fixed circuit to bake into an ASIC — every hash
 runs different code.
 
+## Hashing Versus Brute-Force Mining
+
+RandomX itself is deterministic: for a fixed `key` and `input`, it always
+returns the same 256-bit digest. It does not search for a result internally.
+The brute-force search happens outside the hash function. For each candidate
+nonce, a miner changes the block header supplied as `input`, runs RandomX, and
+checks whether the digest satisfies the network target:
+
+```text
+header with nonce 0 -> RandomX -> digest 0 -> target check
+header with nonce 1 -> RandomX -> digest 1 -> target check
+header with nonce 2 -> RandomX -> digest 2 -> target check
+...
+```
+
+RandomX makes each trial expensive in general-purpose CPU resources and
+memory. Since the digest behaves pseudorandomly, a miner cannot infer a
+successful nonce from nearby failures. If one candidate has probability $p$ of
+meeting the target, the expected search effort is $1/p$ hashes. A verifier
+performs the same deterministic calculation once for the claimed block.
+
+The `key` is held constant across many candidate inputs. Its Cache and other
+key-derived state can be reused, while input-dependent VM execution is
+repeated for each nonce.
+
 ## Project status
 
 The light-mode hash pipeline is complete and passes the official RandomX
@@ -82,6 +107,24 @@ register state becomes the seed for the next program, occasionally reading
 from the Dataset (which is only a function of `key`, never of `input`).
 The very last program's register file is the one and only thing that gets
 turned into the final 32-byte output.
+
+### What makes one trial CPU- and memory-heavy
+
+- **Argon2d Cache initialization** uses 256 MiB and data-dependent memory
+  accesses. It is key-dependent and normally reused across many trials.
+- **Dataset access** derives 64-byte items from the Cache in light mode. This
+  saves the roughly 2 GiB fast-mode Dataset but spends more CPU time per
+  access.
+- **Generated programs** create different integer, floating-point, branch,
+  and memory instructions from the changing input state.
+- **Scratchpad execution** repeatedly accesses a 2 MiB per-hash scratchpad
+  for 8 chained programs, each with 256 instructions executed for 2048
+  iterations.
+
+The result is a deliberately costly trial with latency-sensitive CPU work and
+a substantial memory footprint. The CLI telemetry shows measured wall time,
+process CPU time, CPU share, and attributed memory for cache initialization,
+VM initialization, and hash execution.
 
 ### 1. Cache — turning the key into 256 MiB of noise
 
@@ -216,13 +259,10 @@ tests/
   cucumber.rs               Step definitions for features/full_hash/
 ```
 
-Each stage gets its own feature folder and matching test binary, with its
-own known-good input/output values — the same each-step-then-the-whole-thing
-approach as testing a hash algorithm block-by-block (padding, message
-schedule, compression, ...) before testing the full digest. As new stages
-(`superscalar`, `program`, `vm` instruction execution, ...) get concrete
-reference test vectors, they'll get their own `features/<stage>/` +
-`tests/cucumber_<stage>.rs` pair the same way.
+Each exposed stage gets its own feature folder and matching test binary, with
+known-good input/output values. This follows the same
+each-step-then-the-whole-thing approach used when testing a hash block by
+block before testing the full digest.
 
 ## Running the tests
 
@@ -255,16 +295,23 @@ scenarios were instead computed independently from the documented formula
 A fully correct implementation should make every scenario pass without any
 test changes.
 
-## Running the (eventual) binary
+## Running the binary
 
 ```powershell
 cargo run
 ```
 
-Currently just computes one hash of a hardcoded key/input and prints it in
-hex — a placeholder until the algorithm is implemented and a real CLI
-(key/input/nonce-range arguments, hashrate reporting, etc.) is built on
-top of it.
+The binary computes the default reference hash and prints its telemetry. You
+can provide a key and input explicitly:
+
+```powershell
+cargo run --release -- "test key 000" "This is a test"
+```
+
+To model a mining loop, vary the nonce in the input and call the hash function
+for each candidate, then compare each digest with a target. This educational
+CLI exposes the single-trial computation; it does not implement a nonce range
+or network difficulty target.
 
 ## References
 

@@ -38,5 +38,8 @@ fn then_word_equals(world: &mut BlocksWorld, index: usize, expected_hex: String)
 
 #[tokio::main]
 async fn main() {
-    BlocksWorld::run("features/blocks").await;
+    BlocksWorld::cucumber()
+        .with_default_cli()
+        .run("features/blocks")
+        .await;
 }

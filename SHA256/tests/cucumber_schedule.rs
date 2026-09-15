@@ -42,5 +42,8 @@ fn then_schedule_word_equals(world: &mut ScheduleWorld, index: usize, expected_h
 
 #[tokio::main]
 async fn main() {
-    ScheduleWorld::run("features/schedule").await;
+    ScheduleWorld::cucumber()
+        .with_default_cli()
+        .run("features/schedule")
+        .await;
 }

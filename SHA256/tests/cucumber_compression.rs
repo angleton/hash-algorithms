@@ -50,5 +50,8 @@ fn then_chaining_state_equals(world: &mut CompressionWorld, expected_csv: String
 
 #[tokio::main]
 async fn main() {
-    CompressionWorld::run("features/compression").await;
+    CompressionWorld::cucumber()
+        .with_default_cli()
+        .run("features/compression")
+        .await;
 }

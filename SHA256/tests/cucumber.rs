@@ -26,5 +26,8 @@ fn then_hash_equals(world: &mut Sha256World, expected_hex: String) {
 
 #[tokio::main]
 async fn main() {
-    Sha256World::run("features/full_hash").await;
+    Sha256World::cucumber()
+        .with_default_cli()
+        .run("features/full_hash")
+        .await;
 }
